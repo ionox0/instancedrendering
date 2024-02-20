@@ -4,119 +4,88 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {RGBELoader} from 'three/examples/jsm/loaders/RGBELoader.js';
 
-const renderer = new THREE.WebGLRenderer({antialias: true});
 
-renderer.setSize(window.innerWidth, window.innerHeight);
+class Test {
+    renderer = new THREE.WebGLRenderer({antialias: true});
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    gltfLoader = new GLTFLoader();
+    rgbeLoader = new RGBELoader();
 
-document.body.appendChild(renderer.domElement);
+    constructor () {
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
-const scene = new THREE.Scene();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setClearColor(0xFFEA00);
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 2;
 
-renderer.setClearColor(0xFFEA00);
+        document.body.appendChild(this.renderer.domElement);
+        this.camera.position.set(0, 6, 15);
+        this.camera.lookAt(this.scene.position);
+        this.controls.update();
 
-const camera = new THREE.PerspectiveCamera(
-    45,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-);
-
-camera.position.set(0, 6, 15);
-camera.lookAt(scene.position);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.update();
-
-const ambientLight = new THREE.AmbientLight(0x333333);
-scene.add(ambientLight);
-
-const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
-directionalLight.position.set(0, 10, 10);
-scene.add(directionalLight);
-
-const gltfLoader = new GLTFLoader();
-const rgbeLoader = new RGBELoader();
-
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 2;
-
-rgbeLoader.load('./assets/MR_INT-005_WhiteNeons_NAD.hdr', function(texture) {
-    texture.mapping = THREE.EquirectangularReflectionMapping;
-    scene.environment = texture;
-
-    gltfLoader.load('./assets/star.glb', function(glb) {
-        const mesh = glb.scene.getObjectByName('Star_Star_0');
-        const geometry = mesh.geometry.clone();
-        const material = mesh.material;
-        const starMesh = new THREE.InstancedMesh(geometry, material, 10000);
-        scene.add(starMesh);
-
-        const dummy = new THREE.Object3D();
-        for(let i = 0; i < 10000; i++) {
-            dummy.position.x = Math.random() * 40 - 20;
-            dummy.position.y = Math.random() * 40 - 20;
-            dummy.position.z = Math.random() * 40 - 20;
-
-            dummy.rotation.x = Math.random() * 2 * Math.PI;
-            dummy.rotation.y = Math.random() * 2 * Math.PI;
-            dummy.rotation.z = Math.random() * 2 * Math.PI;
-
-            dummy.scale.x = dummy.scale.y = dummy.scale.z = 0.04 * Math.random();
-
-            dummy.updateMatrix();
-            starMesh.setMatrixAt(i, dummy.matrix);
-            starMesh.setColorAt(i, new THREE.Color(Math.random() * 0xFFFFFF));
-        }
-    });
-});
-
-// const geometry = new THREE.IcosahedronGeometry();
-// const material = new THREE.MeshPhongMaterial({color: 0xFFEA00});
-// const mesh = new THREE.InstancedMesh(geometry, material, 10000);
-// scene.add(mesh);
-
-// const dummy = new THREE.Object3D();
-// for(let i = 0; i < 10000; i++) {
-//     dummy.position.x = Math.random() * 40 - 20;
-//     dummy.position.y = Math.random() * 40 - 20;
-//     dummy.position.z = Math.random() * 40 - 20;
-
-//     dummy.rotation.x = Math.random() * 2 * Math.PI;
-//     dummy.rotation.y = Math.random() * 2 * Math.PI;
-//     dummy.rotation.z = Math.random() * 2 * Math.PI;
-
-//     dummy.scale.x = dummy.scale.y = dummy.scale.z = Math.random();
-
-//     dummy.updateMatrix();
-//     mesh.setMatrixAt(i, dummy.matrix);
-//     mesh.setColorAt(i, new THREE.Color(Math.random() * 0xFFFFFF));
-// }
-
-// const matrix = new THREE.Matrix4();
-function animate(time) {
-    // for(let i = 0; i < 10000; i++) {
-    //     mesh.getMatrixAt(i, matrix);
-    //     matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
-
-    //     dummy.rotation.x = i/10000 * time/1000;
-    //     dummy.rotation.y = i/10000 * time/500;
-    //     dummy.rotation.z = i/10000 * time/1200;
+        const ambientLight = new THREE.AmbientLight(0x333333);
+        const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+        directionalLight.position.set(0, 10, 10);
+        this.scene.add(ambientLight);
+        this.scene.add(directionalLight);
+    }
     
-    //     dummy.updateMatrix();
-    //     mesh.setMatrixAt(i, dummy.matrix);
-    // }
-    // mesh.instanceMatrix.needsUpdate = true;
 
-    // mesh.rotation.y = time / 10000;
+    init() {
+        this.rgbeLoader.load('./assets/MR_INT-005_WhiteNeons_NAD.hdr', (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            this.scene.environment = texture;
 
-    renderer.render(scene, camera);
+            this.gltfLoader.load('./assets/star.glb', (glb) => {
+                const mesh = glb.scene.getObjectByName('Star_Star_0');
+                const geometry = mesh.geometry.clone();
+                const material = mesh.material;
+                this.starMesh = new THREE.InstancedMesh(geometry, material, 10000);
+                this.scene.add(this.starMesh);
+
+                const dummy = new THREE.Object3D();
+                for(let i = 0; i < 10000; i++) {
+                    dummy.position.x = Math.random() * 40 - 20;
+                    dummy.position.y = Math.random() * 40 - 20;
+                    dummy.position.z = Math.random() * 40 - 20;
+                    dummy.rotation.x = Math.random() * 2 * Math.PI;
+                    dummy.rotation.y = Math.random() * 2 * Math.PI;
+                    dummy.rotation.z = Math.random() * 2 * Math.PI;
+                    dummy.scale.x = dummy.scale.y = dummy.scale.z = 0.04 * Math.random();
+
+                    dummy.updateMatrix();
+                    this.starMesh.setMatrixAt(i, dummy.matrix);
+                    this.starMesh.setColorAt(i, new THREE.Color(Math.random() * 0xFFFFFF));
+                }
+
+                this.renderer.setAnimationLoop((time) => { this.animate(time, dummy) });
+            });
+        });
+    }
+
+    animate(time, dummy) {
+        const matrix = new THREE.Matrix4();
+
+        for(let i = 0; i < 10000; i++) {
+            this.starMesh.getMatrixAt(i, matrix);
+            matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
+
+            dummy.rotation.x = i/10000 * time/1000;
+            dummy.rotation.y = i/10000 * time/500;
+            dummy.rotation.z = i/10000 * time/1200;
+        
+            dummy.updateMatrix();
+            this.starMesh.setMatrixAt(i, dummy.matrix);
+        }
+        this.starMesh.instanceMatrix.needsUpdate = true;
+        this.starMesh.rotation.y = time / 10000;
+        this.renderer.render(this.scene, this.camera);
+    }
+
 }
 
-renderer.setAnimationLoop(animate);
-
-window.addEventListener('resize', function() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
+t = new Test();
+t.init();
